@@ -3,8 +3,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Camera, TrendingUp, Droplets, Sun, Calendar, Plus } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import PlantAnalysis from "./PlantAnalysis";
+import { useState } from "react";
 
 const Dashboard = () => {
+  const [showAnalysis, setShowAnalysis] = useState(false);
   const recentAnalysis = [
     {
       id: 1,
@@ -46,7 +49,10 @@ const Dashboard = () => {
               Cuide das suas plantas com a ajuda da inteligência artificial
             </p>
           </div>
-          <Button className="bg-white text-green-600 hover:bg-green-50">
+          <Button 
+            onClick={() => setShowAnalysis(true)}
+            className="bg-white text-green-600 hover:bg-green-50"
+          >
             <Camera className="w-4 h-4 mr-2" />
             Analisar Planta
           </Button>
@@ -151,13 +157,38 @@ const Dashboard = () => {
           </div>
           
           <div className="mt-4 text-center">
-            <Button variant="outline" className="w-full">
+            <Button 
+              onClick={() => setShowAnalysis(true)}
+              variant="outline" 
+              className="w-full"
+            >
               <Plus className="w-4 h-4 mr-2" />
               Analisar Nova Planta
             </Button>
           </div>
         </CardContent>
       </Card>
+
+      {/* Plant Analysis Modal */}
+      {showAnalysis && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-green-700">Análise de Plantas com IA</h2>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setShowAnalysis(false)}
+                >
+                  ✕ Fechar
+                </Button>
+              </div>
+              <PlantAnalysis />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
