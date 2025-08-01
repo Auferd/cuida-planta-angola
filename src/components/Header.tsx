@@ -1,12 +1,19 @@
 
-import { Menu, User, Bell, Settings } from "lucide-react";
+import { Menu, User, Bell, Settings, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/hooks/useAuth";
 import Navigation from "./Navigation";
 
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const { user, signOut } = useAuth();
+
+  const handleSignOut = async () => {
+    await signOut();
+  };
 
   return (
     <header className="bg-white shadow-sm border-b border-green-100 sticky top-0 z-50">
@@ -34,9 +41,34 @@ const Header = () => {
             <Button variant="ghost" size="sm">
               <Settings className="w-4 h-4" />
             </Button>
-            <Button variant="ghost" size="sm">
-              <User className="w-4 h-4" />
-            </Button>
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm">
+                  <User className="w-4 h-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <div className="px-2 py-1.5 text-sm">
+                  <p className="font-medium">{user?.user_metadata?.full_name || "Usuário"}</p>
+                  <p className="text-gray-500 text-xs">{user?.email}</p>
+                </div>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem>
+                  <User className="w-4 h-4 mr-2" />
+                  Meu Perfil
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <Settings className="w-4 h-4 mr-2" />
+                  Configurações
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleSignOut} className="text-red-600">
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Sair
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
           {/* Mobile Menu */}
@@ -54,9 +86,18 @@ const Header = () => {
                   </div>
                   <h1 className="text-xl font-bold text-green-800">Cuida Planta</h1>
                 </div>
+                
+                <div className="py-4 border-b">
+                  <div className="text-sm">
+                    <p className="font-medium">{user?.user_metadata?.full_name || "Usuário"}</p>
+                    <p className="text-gray-500 text-xs">{user?.email}</p>
+                  </div>
+                </div>
+                
                 <div className="py-4">
                   <Navigation isMobile />
                 </div>
+                
                 <div className="mt-auto pt-4 border-t">
                   <div className="flex flex-col space-y-2">
                     <Button variant="ghost" className="justify-start">
@@ -70,6 +111,14 @@ const Header = () => {
                     <Button variant="ghost" className="justify-start">
                       <User className="w-4 h-4 mr-2" />
                       Perfil
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      className="justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
+                      onClick={handleSignOut}
+                    >
+                      <LogOut className="w-4 h-4 mr-2" />
+                      Sair
                     </Button>
                   </div>
                 </div>
