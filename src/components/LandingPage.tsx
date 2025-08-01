@@ -2,29 +2,15 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Camera, CheckCircle, Users, Zap, Star, ArrowRight, AlertTriangle, Leaf, Sun, Droplets } from "lucide-react";
+import { Camera, CheckCircle, Users, Zap, Star, ArrowRight, AlertTriangle, Leaf, Sun, Droplets, Menu, X } from "lucide-react";
+import heroImage from "@/assets/hero-woman-plants.jpg";
 
 interface LandingPageProps {
   onGetStarted: () => void;
 }
 
 const LandingPage = ({ onGetStarted }: LandingPageProps) => {
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  
-  const heroImages = [
-    "https://images.unsplash.com/photo-1465146344425-f00d5f5c8f07?w=1920&h=1080&fit=crop", // orange flowers
-    "https://images.unsplash.com/photo-1523712999610-f77fbcfc3843?w=1920&h=1080&fit=crop", // forest heat by sunbeam
-    "https://images.unsplash.com/photo-1518495973542-4542c06a5843?w=1920&h=1080&fit=crop", // sun light through leaves
-    "https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=1920&h=1080&fit=crop", // water surrounded by trees
-  ];
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentImageIndex((prev) => (prev + 1) % heroImages.length);
-    }, 10000); // Change every 10 seconds
-
-    return () => clearInterval(interval);
-  }, []);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const problems = [
     {
@@ -100,22 +86,69 @@ const LandingPage = ({ onGetStarted }: LandingPageProps) => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-50">
+      {/* Header */}
+      <header className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-b border-green-100 shadow-lg">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg">
+                <Leaf className="w-6 h-6 text-white" />
+              </div>
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
+                Cuida Planta
+              </h1>
+            </div>
+            
+            {/* Desktop Navigation */}
+            <nav className="hidden md:flex items-center space-x-8">
+              <a href="#como-funciona" className="text-gray-700 hover:text-green-600 font-medium transition-colors">Como Funciona</a>
+              <a href="#testemunhos" className="text-gray-700 hover:text-green-600 font-medium transition-colors">Testemunhos</a>
+              <a href="#precos" className="text-gray-700 hover:text-green-600 font-medium transition-colors">Preços</a>
+              <Button 
+                onClick={onGetStarted}
+                className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white px-6 py-2 rounded-xl shadow-lg transition-all duration-300 hover:shadow-green-500/25"
+              >
+                Começar Grátis
+              </Button>
+            </nav>
+
+            {/* Mobile Menu Button */}
+            <button 
+              className="md:hidden p-2"
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+            >
+              {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
+          </div>
+
+          {/* Mobile Navigation */}
+          {isMenuOpen && (
+            <nav className="md:hidden mt-4 pb-4 border-t border-green-100 pt-4">
+              <div className="flex flex-col space-y-3">
+                <a href="#como-funciona" className="text-gray-700 hover:text-green-600 font-medium transition-colors">Como Funciona</a>
+                <a href="#testemunhos" className="text-gray-700 hover:text-green-600 font-medium transition-colors">Testemunhos</a>
+                <a href="#precos" className="text-gray-700 hover:text-green-600 font-medium transition-colors">Preços</a>
+                <Button 
+                  onClick={onGetStarted}
+                  className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white px-6 py-2 rounded-xl shadow-lg transition-all duration-300 w-full"
+                >
+                  Começar Grátis
+                </Button>
+              </div>
+            </nav>
+          )}
+        </div>
+      </header>
+
       {/* Hero Section */}
-      <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-        {/* Background Images with Parallax Effect */}
+      <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20">
+        {/* Background Image */}
         <div className="absolute inset-0 w-full h-full">
-          {heroImages.map((image, index) => (
-            <div
-              key={index}
-              className={`absolute inset-0 bg-cover bg-center bg-no-repeat transition-all duration-2000 ease-in-out ${
-                index === currentImageIndex 
-                  ? 'opacity-30 scale-105' 
-                  : 'opacity-0 scale-100'
-              }`}
-              style={{ backgroundImage: `url(${image})` }}
-            />
-          ))}
-          <div className="absolute inset-0 bg-gradient-to-br from-black/50 via-black/30 to-green-900/60" />
+          <div
+            className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+            style={{ backgroundImage: `url(${heroImage})` }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/40 to-transparent" />
         </div>
 
         {/* Floating Elements */}
@@ -130,50 +163,72 @@ const LandingPage = ({ onGetStarted }: LandingPageProps) => {
         </div>
 
         {/* Content */}
-        <div className="relative z-10 container mx-auto px-4 py-16 text-center">
-          <div className="max-w-4xl mx-auto">
-            <div className="mb-6 animate-fade-in">
-              <div className="inline-flex items-center space-x-2 bg-white/90 backdrop-blur-sm rounded-full px-6 py-3 mb-6 shadow-xl border border-green-200">
-                <span className="text-3xl animate-pulse">🇦🇴</span>
-                <span className="text-green-800 font-bold text-lg">Feito especialmente para Angola</span>
-              </div>
-            </div>
+        <div className="relative z-10 container mx-auto px-4 py-16">
+          <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            {/* Left side - Text content */}
+            <div className="text-left">
+              <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-8 leading-tight drop-shadow-2xl">
+                Suas plantas estão
+                <span className="text-green-400 block"> morrendo</span>?
+              </h1>
             
-            <h1 className="text-5xl md:text-7xl font-bold text-white mb-8 animate-scale-in drop-shadow-2xl">
-              Suas plantas estão
-              <span className="text-green-400 animate-pulse"> morrendo</span>?
-            </h1>
-            
-            <div className="bg-white/95 backdrop-blur-sm rounded-3xl p-8 mb-12 shadow-2xl border border-green-200 animate-fade-in delay-500">
-              <p className="text-xl md:text-2xl text-gray-800 mb-6 max-w-3xl mx-auto leading-relaxed">
-                <span className="font-bold text-red-600 text-2xl">Pare de perder plantas por não saber como cuidar!</span> 
+              <p className="text-xl md:text-2xl text-white/90 mb-8 leading-relaxed drop-shadow-lg">
+                <span className="font-bold text-red-400 text-2xl">Pare de perder plantas por não saber como cuidar!</span> 
                 <br />
-                Com o Cuida Planta, você tira uma foto e nossa IA te diz exatamente o que fazer - 
-                funciona perfeitamente com o clima angolano.
+                Com o Cuida Planta, você tira uma foto e nossa IA te diz exatamente o que fazer.
               </p>
               
-              <div className="flex flex-col sm:flex-row gap-6 justify-center items-center mb-8">
+              <div className="flex flex-col sm:flex-row gap-6 mb-8">
                 <Button 
                   size="lg" 
-                  className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-10 py-6 text-xl font-bold rounded-2xl shadow-2xl transform hover:scale-105 transition-all duration-300 hover:shadow-green-500/25"
+                  className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-10 py-6 text-xl font-bold rounded-2xl shadow-2xl transform hover:scale-105 transition-all duration-300 hover:shadow-green-500/25"
                   onClick={onGetStarted}
                 >
                   <Camera className="w-6 h-6 mr-3" />
                   Experimentar Grátis Agora
                 </Button>
-                <div className="text-sm text-gray-600 bg-green-50 px-4 py-2 rounded-full border border-green-200">
+                <div className="flex items-center text-white/80 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full border border-white/20">
                   ✅ Sem cartão de crédito • ✅ 3 análises grátis
                 </div>
               </div>
               
-              <div className="flex items-center justify-center space-x-8 text-sm text-gray-600">
-                <div className="flex items-center bg-green-50 px-4 py-2 rounded-full border border-green-200">
-                  <CheckCircle className="w-5 h-5 text-green-500 mr-2" />
+              <div className="flex flex-col sm:flex-row gap-4 text-sm text-white/80">
+                <div className="flex items-center bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full border border-white/20">
+                  <CheckCircle className="w-5 h-5 text-green-400 mr-2" />
                   <span className="font-semibold">+1.200 plantas identificadas</span>
                 </div>
-                <div className="flex items-center bg-blue-50 px-4 py-2 rounded-full border border-blue-200">
-                  <CheckCircle className="w-5 h-5 text-blue-500 mr-2" />
+                <div className="flex items-center bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full border border-white/20">
+                  <CheckCircle className="w-5 h-5 text-blue-400 mr-2" />
                   <span className="font-semibold">+500 usuários em Angola</span>
+                </div>
+              </div>
+            </div>
+            
+            {/* Right side - Feature highlights */}
+            <div className="hidden lg:block">
+              <div className="space-y-6">
+                <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-6 shadow-xl border border-green-200 transform hover:scale-105 transition-all duration-300">
+                  <div className="flex items-center mb-4">
+                    <Camera className="w-8 h-8 text-green-600 mr-3" />
+                    <h3 className="font-bold text-gray-800">Identificação Instantânea</h3>
+                  </div>
+                  <p className="text-gray-600">Tire uma foto e saiba exatamente que planta é</p>
+                </div>
+                
+                <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-6 shadow-xl border border-blue-200 transform hover:scale-105 transition-all duration-300">
+                  <div className="flex items-center mb-4">
+                    <Zap className="w-8 h-8 text-blue-600 mr-3" />
+                    <h3 className="font-bold text-gray-800">Diagnóstico Inteligente</h3>
+                  </div>
+                  <p className="text-gray-600">Detecta problemas e dá soluções práticas</p>
+                </div>
+                
+                <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-6 shadow-xl border border-purple-200 transform hover:scale-105 transition-all duration-300">
+                  <div className="flex items-center mb-4">
+                    <Users className="w-8 h-8 text-purple-600 mr-3" />
+                    <h3 className="font-bold text-gray-800">Comunidade Angolana</h3>
+                  </div>
+                  <p className="text-gray-600">Conecte-se com outros cuidadores de plantas</p>
                 </div>
               </div>
             </div>
