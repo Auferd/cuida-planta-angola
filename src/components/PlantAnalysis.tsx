@@ -8,17 +8,26 @@ import { Camera, Upload, Loader2, CheckCircle, AlertCircle, Info } from "lucide-
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
-const PlantAnalysis = () => {
+interface PlantAnalysisProps {
+  onAnalysisComplete?: () => void;
+}
+
+const PlantAnalysis = ({ onAnalysisComplete }: PlantAnalysisProps) => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisComplete, setAnalysisComplete] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      setSelectedFile(file);
       const reader = new FileReader();
       reader.onload = (e) => {
         setSelectedImage(e.target?.result as string);
@@ -30,41 +39,94 @@ const PlantAnalysis = () => {
   };
 
   const handleAnalyze = async () => {
-    if (!selectedImage) return;
+    if (!selectedFile || !selectedImage) return;
     
     setIsAnalyzing(true);
     
-    // Simulate AI analysis
-    setTimeout(() => {
-      setAnalysisResult({
-        species: "Manjericão (Ocimum basilicum)",
-        type: "Planta Medicinal e Culinária",
-        health: 75,
-        hydration: "Bem hidratada",
-        problems: [
-          "Algumas folhas amareladas na base",
-          "Possível deficiência de nitrogênio"
-        ],
-        recommendations: [
-          "Remover as folhas amareladas",
-          "Aplicar adubo rico em nitrogênio",
-          "Manter rega 2-3 vezes por semana",
-          "Garantir 4-6 horas de sol direto por dia"
-        ],
-        climate_tips: [
-          "Ideal para o clima tropical de Angola",
-          "Proteger do sol muito forte nas horas do meio-dia",
-          "Durante a estação seca, aumentar a frequência de rega"
-        ],
-        uses: [
-          "Tempero culinário",
-          "Chá medicinal para problemas digestivos",
-          "Repelente natural de insetos"
-        ]
+    try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({
+          title: "Erro de autenticação",
+          description: "Você precisa estar logado para analisar plantas.",
+          variant: "destructive",
+        });
+        setIsAnalyzing(false);
+        return;
+      }
+
+      // Upload image to storage
+      const fileExt = selectedFile.name.split('.').pop();
+      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+      
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('plant-images')
+        .upload(fileName, selectedFile);
+
+      if (uploadError) {
+        throw new Error(`Erro no upload: ${uploadError.message}`);
+      }
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('plant-images')
+        .getPublicUrl(fileName);
+
+      // Call edge function to analyze the plant
+      const { data, error } = await supabase.functions.invoke('analyze-plant', {
+        body: { 
+          imageUrl: publicUrl,
+          userId: user.id
+        }
       });
-      setIsAnalyzing(false);
+
+      if (error) {
+        throw new Error(`Erro na análise: ${error.message}`);
+      }
+
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      // Format the result for display
+      const analysis = data.analysis;
+      setAnalysisResult({
+        species: analysis.species,
+        type: analysis.type,
+        health: analysis.health_score,
+        hydration: analysis.hydration_status,
+        problems: analysis.problems || [],
+        recommendations: analysis.recommendations || [],
+        climate_tips: analysis.climate_tips || [],
+        uses: analysis.uses || [],
+        confidence: analysis.confidence_score
+      });
+
       setAnalysisComplete(true);
-    }, 3000);
+      
+      toast({
+        title: "Análise concluída!",
+        description: "A análise da sua planta foi realizada com sucesso.",
+      });
+
+      // Notify parent component that analysis is complete
+      if (onAnalysisComplete) {
+        setTimeout(() => {
+          onAnalysisComplete();
+        }, 2000); // Give user time to see the result
+      }
+
+    } catch (error: any) {
+      console.error('Error analyzing plant:', error);
+      toast({
+        title: "Erro na análise",
+        description: error.message || "Ocorreu um erro ao analisar a planta. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
 
   const triggerFileInput = () => {
@@ -291,16 +353,20 @@ const PlantAnalysis = () => {
             </CardContent>
           </Card>
 
-          {/* Save Analysis */}
-          <Alert>
-            <Info className="h-4 w-4" />
-            <AlertDescription>
-              Quer salvar esta análise no seu perfil? 
-              <Button variant="link" className="p-0 h-auto ml-1">
-                Criar conta grátis
-              </Button> e tenha acesso ao histórico completo!
-            </AlertDescription>
-          </Alert>
+          {/* Analysis Confidence */}
+          {analysisResult.confidence && (
+            <Alert>
+              <Info className="h-4 w-4" />
+              <AlertDescription>
+                Nível de confiança da análise: {Math.round(analysisResult.confidence * 100)}%
+                {analysisResult.confidence < 0.7 && (
+                  <span className="block mt-1 text-orange-600">
+                    Confiança baixa - considere tirar uma foto mais clara da planta.
+                  </span>
+                )}
+              </AlertDescription>
+            </Alert>
+          )}
         </div>
       )}
     </div>

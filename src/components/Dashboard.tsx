@@ -4,39 +4,70 @@ import { Button } from "@/components/ui/button";
 import { Camera, TrendingUp, Droplets, Sun, Calendar, Plus } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import PlantAnalysis from "./PlantAnalysis";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 const Dashboard = () => {
   const [showAnalysis, setShowAnalysis] = useState(false);
-  const recentAnalysis = [
-    {
-      id: 1,
-      name: "Manjericão",
-      status: "Saudável",
-      lastWatered: "Há 2 dias",
-      nextWatering: "Amanhã",
-      image: "/placeholder.svg",
-      health: 85,
-    },
-    {
-      id: 2,
-      name: "Aloe Vera",
-      status: "Precisa água",
-      lastWatered: "Há 5 dias",
-      nextWatering: "Hoje",
-      image: "/placeholder.svg",
-      health: 60,
-    },
-    {
-      id: 3,
-      name: "Rosa do Deserto",
-      status: "Excelente",
-      lastWatered: "Há 3 dias",
-      nextWatering: "Em 2 dias",
-      image: "/placeholder.svg",
-      health: 95,
-    },
-  ];
+  const [recentAnalysis, setRecentAnalysis] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Load user's plant analyses from database
+  const loadUserAnalyses = async () => {
+    try {
+      setIsLoading(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        setRecentAnalysis([]);
+        return;
+      }
+
+      const { data: analyses, error } = await supabase
+        .from('plant_analyses')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (error) {
+        console.error('Error loading analyses:', error);
+        return;
+      }
+
+      const formattedAnalyses = analyses?.map(analysis => ({
+        id: analysis.id,
+        name: analysis.species?.split('(')[0]?.trim() || 'Planta não identificada',
+        status: analysis.health_score >= 80 ? 'Saudável' : 
+                analysis.health_score >= 60 ? 'Atenção' : 'Precisa cuidados',
+        lastAnalyzed: new Date(analysis.created_at).toLocaleDateString('pt-BR'),
+        health: analysis.health_score || 0,
+        hydration: analysis.hydration_status || 'Não informado',
+        species: analysis.species,
+        image_url: analysis.image_url
+      })) || [];
+
+      setRecentAnalysis(formattedAnalyses);
+    } catch (error) {
+      console.error('Error in loadUserAnalyses:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Load analyses when component mounts
+  useEffect(() => {
+    loadUserAnalyses();
+    
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
+        loadUserAnalyses();
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -124,7 +155,22 @@ const Dashboard = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {recentAnalysis.map((plant) => (
+            {isLoading ? (
+              <div className="text-center py-8">
+                <div className="text-gray-500">Carregando suas análises...</div>
+              </div>
+            ) : recentAnalysis.length === 0 ? (
+              <div className="text-center py-8">
+                <div className="text-gray-500 mb-4">Você ainda não analisou nenhuma planta</div>
+                <Button 
+                  onClick={() => setShowAnalysis(true)}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  <Camera className="w-4 h-4 mr-2" />
+                  Fazer Primeira Análise
+                </Button>
+              </div>
+            ) : recentAnalysis.map((plant) => (
               <div key={plant.id} className="flex items-center space-x-4 p-3 border rounded-lg hover:bg-gray-50 transition-colors">
                 <div className="w-16 h-16 bg-green-100 rounded-lg flex items-center justify-center">
                   <span className="text-2xl">🌿</span>
@@ -140,10 +186,10 @@ const Dashboard = () => {
                       {plant.status}
                     </span>
                   </div>
-                  <div className="flex items-center space-x-4 text-sm text-gray-600 mt-1">
-                    <span>Regada: {plant.lastWatered}</span>
-                    <span>Próxima: {plant.nextWatering}</span>
-                  </div>
+                   <div className="flex items-center space-x-4 text-sm text-gray-600 mt-1">
+                     <span>Analisada: {plant.lastAnalyzed}</span>
+                     <span>Hidratação: {plant.hydration}</span>
+                   </div>
                   <div className="mt-2">
                     <div className="flex items-center justify-between text-sm mb-1">
                       <span>Saúde da planta</span>
@@ -156,16 +202,18 @@ const Dashboard = () => {
             ))}
           </div>
           
-          <div className="mt-4 text-center">
-            <Button 
-              onClick={() => setShowAnalysis(true)}
-              variant="outline" 
-              className="w-full"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Analisar Nova Planta
-            </Button>
-          </div>
+          {!isLoading && recentAnalysis.length > 0 && (
+            <div className="mt-4 text-center">
+              <Button 
+                onClick={() => setShowAnalysis(true)}
+                variant="outline" 
+                className="w-full"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Analisar Nova Planta
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -184,7 +232,10 @@ const Dashboard = () => {
                   ✕ Fechar
                 </Button>
               </div>
-              <PlantAnalysis />
+               <PlantAnalysis onAnalysisComplete={() => {
+                 setShowAnalysis(false);
+                 loadUserAnalyses(); // Reload the analyses list
+               }} />
             </div>
           </div>
         </div>

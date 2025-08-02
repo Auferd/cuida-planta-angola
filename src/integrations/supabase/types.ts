@@ -14,7 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      plant_analyses: {
+        Row: {
+          climate_tips: string[] | null
+          confidence_score: number | null
+          created_at: string
+          health_score: number | null
+          hydration_status: string | null
+          id: string
+          image_url: string
+          problems: string[] | null
+          recommendations: string[] | null
+          species: string | null
+          type: string | null
+          updated_at: string
+          user_id: string | null
+          uses: string[] | null
+        }
+        Insert: {
+          climate_tips?: string[] | null
+          confidence_score?: number | null
+          created_at?: string
+          health_score?: number | null
+          hydration_status?: string | null
+          id?: string
+          image_url: string
+          problems?: string[] | null
+          recommendations?: string[] | null
+          species?: string | null
+          type?: string | null
+          updated_at?: string
+          user_id?: string | null
+          uses?: string[] | null
+        }
+        Update: {
+          climate_tips?: string[] | null
+          confidence_score?: number | null
+          created_at?: string
+          health_score?: number | null
+          hydration_status?: string | null
+          id?: string
+          image_url?: string
+          problems?: string[] | null
+          recommendations?: string[] | null
+          species?: string | null
+          type?: string | null
+          updated_at?: string
+          user_id?: string | null
+          uses?: string[] | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
