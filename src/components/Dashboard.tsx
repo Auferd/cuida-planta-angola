@@ -98,9 +98,9 @@ const Dashboard = () => {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">23</div>
+            <div className="text-2xl font-bold text-green-600">{recentAnalysis.length}</div>
             <p className="text-xs text-muted-foreground">
-              +3 esta semana
+              Total de análises
             </p>
           </CardContent>
         </Card>
@@ -111,9 +111,14 @@ const Dashboard = () => {
             <Sun className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">18</div>
+            <div className="text-2xl font-bold text-green-600">
+              {recentAnalysis.filter(plant => plant.health >= 70).length}
+            </div>
             <p className="text-xs text-muted-foreground">
-              78% das suas plantas
+              {recentAnalysis.length > 0 
+                ? `${Math.round((recentAnalysis.filter(plant => plant.health >= 70).length / recentAnalysis.length) * 100)}% das suas plantas`
+                : '0% das suas plantas'
+              }
             </p>
           </CardContent>
         </Card>
@@ -124,22 +129,30 @@ const Dashboard = () => {
             <Droplets className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-600">3</div>
+            <div className="text-2xl font-bold text-orange-600">
+              {recentAnalysis.filter(plant => plant.hydration?.toLowerCase().includes('precisa') || plant.hydration?.toLowerCase().includes('água')).length}
+            </div>
             <p className="text-xs text-muted-foreground">
-              Regue hoje
+              Regue quando necessário
             </p>
           </CardContent>
         </Card>
         
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Próximas Tarefas</CardTitle>
+            <CardTitle className="text-sm font-medium">Análises Recentes</CardTitle>
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">5</div>
+            <div className="text-2xl font-bold text-blue-600">
+              {recentAnalysis.filter(plant => {
+                const oneWeekAgo = new Date();
+                oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+                return new Date(plant.lastAnalyzed) >= oneWeekAgo;
+              }).length}
+            </div>
             <p className="text-xs text-muted-foreground">
-              Esta semana
+              Última semana
             </p>
           </CardContent>
         </Card>

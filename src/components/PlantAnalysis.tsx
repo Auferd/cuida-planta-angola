@@ -85,8 +85,12 @@ const PlantAnalysis = ({ onAnalysisComplete }: PlantAnalysisProps) => {
         throw new Error(`Erro na análise: ${error.message}`);
       }
 
-      if (data.error) {
+      if (data?.error) {
         throw new Error(data.error);
+      }
+
+      if (!data?.success || !data?.analysis) {
+        throw new Error('Resposta inválida do serviço de análise');
       }
 
       // Format the result for display

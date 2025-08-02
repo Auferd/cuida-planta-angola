@@ -28,7 +28,16 @@ serve(async (req) => {
 
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
     if (!openAIApiKey) {
-      throw new Error('OpenAI API key not configured');
+      return new Response(
+        JSON.stringify({ 
+          error: 'Serviço temporariamente indisponível. Tente novamente em alguns minutos.',
+          details: 'OpenAI API key não configurada' 
+        }),
+        { 
+          status: 503, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
     }
 
     // Analyze the plant image using OpenAI Vision
@@ -80,7 +89,16 @@ serve(async (req) => {
     
     if (!response.ok) {
       console.error('OpenAI API error:', data);
-      throw new Error(`OpenAI API error: ${data.error?.message || 'Unknown error'}`);
+      return new Response(
+        JSON.stringify({ 
+          error: 'Serviço de análise temporariamente indisponível. Tente novamente em alguns minutos.',
+          details: `OpenAI API error: ${data.error?.message || 'Unknown error'}` 
+        }),
+        { 
+          status: 503, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
     }
 
     const analysisText = data.choices[0].message.content;

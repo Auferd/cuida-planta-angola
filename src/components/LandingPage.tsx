@@ -187,9 +187,6 @@ const LandingPage = ({ onGetStarted }: LandingPageProps) => {
                   <Camera className="w-6 h-6 mr-3" />
                   Experimentar Grátis Agora
                 </Button>
-                <div className="flex items-center text-white/80 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full border border-white/20">
-                  ✅ Sem cartão de crédito • ✅ 3 análises grátis
-                </div>
               </div>
               
               <div className="flex flex-col sm:flex-row gap-4 text-sm text-white/80">
@@ -207,7 +204,7 @@ const LandingPage = ({ onGetStarted }: LandingPageProps) => {
             {/* Right side - Feature highlights */}
             <div className="hidden lg:block">
               <div className="space-y-6">
-                <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-6 shadow-xl border border-green-200 transform hover:scale-105 transition-all duration-300">
+                <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-green-200/30 transform hover:scale-105 transition-all duration-300">
                   <div className="flex items-center mb-4">
                     <Camera className="w-8 h-8 text-green-600 mr-3" />
                     <h3 className="font-bold text-gray-800">Identificação Instantânea</h3>
@@ -215,7 +212,7 @@ const LandingPage = ({ onGetStarted }: LandingPageProps) => {
                   <p className="text-gray-600">Tire uma foto e saiba exatamente que planta é</p>
                 </div>
                 
-                <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-6 shadow-xl border border-blue-200 transform hover:scale-105 transition-all duration-300">
+                <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-blue-200/30 transform hover:scale-105 transition-all duration-300">
                   <div className="flex items-center mb-4">
                     <Zap className="w-8 h-8 text-blue-600 mr-3" />
                     <h3 className="font-bold text-gray-800">Diagnóstico Inteligente</h3>
@@ -223,7 +220,7 @@ const LandingPage = ({ onGetStarted }: LandingPageProps) => {
                   <p className="text-gray-600">Detecta problemas e dá soluções práticas</p>
                 </div>
                 
-                <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-6 shadow-xl border border-purple-200 transform hover:scale-105 transition-all duration-300">
+                <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-purple-200/30 transform hover:scale-105 transition-all duration-300">
                   <div className="flex items-center mb-4">
                     <Users className="w-8 h-8 text-purple-600 mr-3" />
                     <h3 className="font-bold text-gray-800">Comunidade Angolana</h3>
