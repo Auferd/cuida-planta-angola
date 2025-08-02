@@ -1,6 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
+import { GoogleGenerativeAI } from "npm:@google/generative-ai";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -26,83 +27,42 @@ serve(async (req) => {
     console.log('Analyzing plant for user:', userId);
     console.log('Image URL:', imageUrl);
 
-    const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
-    if (!openAIApiKey) {
-      return new Response(
-        JSON.stringify({ 
-          error: 'Serviço temporariamente indisponível. Tente novamente em alguns minutos.',
-          details: 'OpenAI API key não configurada' 
-        }),
-        { 
-          status: 503, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+    // Initialize Gemini AI with the provided API key
+    const genAI = new GoogleGenerativeAI('AIzaSyAlBA4BGzUpc_mHmLDxXc04UqPc1fSL3Lc');
+    const model = genAI.getGenerativeModel({ model: "gemini-pro-vision" });
+
+    // Fetch the image and convert to base64
+    const imageResponse = await fetch(imageUrl);
+    const imageBlob = await imageResponse.blob();
+    const imageBase64 = await blobToBase64(imageBlob);
+
+    // Prepare the prompt
+    const prompt = `Você é um especialista em botânica que analisa plantas. Analise a imagem da planta e forneça as informações em formato JSON estruturado com os seguintes campos:
+    - species: nome científico e comum da planta
+    - type: categoria da planta (ex: "Planta Medicinal e Culinária")
+    - health_score: pontuação de saúde de 0-100
+    - hydration_status: status da hidratação (ex: "Bem hidratada", "Precisa água")
+    - problems: array de problemas detectados
+    - recommendations: array de recomendações de cuidado
+    - climate_tips: array de dicas específicas para o clima tropical de Angola
+    - uses: array de usos da planta (medicinais, culinários, etc.)
+    - confidence_score: sua confiança na identificação (0-1)
+
+    Responda APENAS com o JSON válido, sem formatação markdown.`;
+
+    // Analyze image with Gemini
+    const result = await model.generateContent([
+      prompt,
+      {
+        inlineData: {
+          mimeType: "image/jpeg",
+          data: imageBase64
         }
-      );
-    }
+      }
+    ]);
 
-    // Analyze the plant image using OpenAI Vision
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o',
-        messages: [
-          {
-            role: 'system',
-            content: `Você é um especialista em botânica que analisa plantas. Analise a imagem da planta e forneça as informações em formato JSON estruturado com os seguintes campos:
-            - species: nome científico e comum da planta
-            - type: categoria da planta (ex: "Planta Medicinal e Culinária")
-            - health_score: pontuação de saúde de 0-100
-            - hydration_status: status da hidratação (ex: "Bem hidratada", "Precisa água")
-            - problems: array de problemas detectados
-            - recommendations: array de recomendações de cuidado
-            - climate_tips: array de dicas específicas para o clima tropical de Angola
-            - uses: array de usos da planta (medicinais, culinários, etc.)
-            - confidence_score: sua confiança na identificação (0-1)
-
-            Responda APENAS com o JSON válido, sem formatação markdown.`
-          },
-          {
-            role: 'user',
-            content: [
-              {
-                type: 'text',
-                text: 'Analise esta planta e forneça as informações solicitadas:'
-              },
-              {
-                type: 'image_url',
-                image_url: {
-                  url: imageUrl
-                }
-              }
-            ]
-          }
-        ],
-        max_tokens: 1500,
-      }),
-    });
-
-    const data = await response.json();
-    
-    if (!response.ok) {
-      console.error('OpenAI API error:', data);
-      return new Response(
-        JSON.stringify({ 
-          error: 'Serviço de análise temporariamente indisponível. Tente novamente em alguns minutos.',
-          details: `OpenAI API error: ${data.error?.message || 'Unknown error'}` 
-        }),
-        { 
-          status: 503, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
-    }
-
-    const analysisText = data.choices[0].message.content;
-    console.log('Raw analysis result:', analysisText);
+    const response = await result.response;
+    const analysisText = response.text();
 
     let analysis;
     try {
@@ -147,18 +107,17 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: true, 
-        analysis: savedAnalysis,
-        message: 'Análise concluída com sucesso!'
+        analysis: savedAnalysis 
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
-    console.error('Error in analyze-plant function:', error);
+    console.error('Error:', error);
     return new Response(
       JSON.stringify({ 
-        error: error.message,
-        details: 'Erro na análise da planta. Tente novamente.' 
+        error: 'Ocorreu um erro ao analisar a planta. Tente novamente.',
+        details: error.message 
       }),
       { 
         status: 500, 
@@ -167,3 +126,14 @@ serve(async (req) => {
     );
   }
 });
+
+// Helper function to convert Blob to base64
+async function blobToBase64(blob: Blob): Promise<string> {
+  const buffer = await blob.arrayBuffer();
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  for (let i = 0; i < bytes.byteLength; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+}

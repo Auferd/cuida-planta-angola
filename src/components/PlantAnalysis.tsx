@@ -73,7 +73,7 @@ const PlantAnalysis = ({ onAnalysisComplete }: PlantAnalysisProps) => {
         .from('plant-images')
         .getPublicUrl(fileName);
 
-      // Call edge function to analyze the plant
+      // Call edge function to analyze the plant with Gemini AI
       const { data, error } = await supabase.functions.invoke('analyze-plant', {
         body: { 
           imageUrl: publicUrl,
@@ -93,7 +93,7 @@ const PlantAnalysis = ({ onAnalysisComplete }: PlantAnalysisProps) => {
         throw new Error('Resposta inválida do serviço de análise');
       }
 
-      // Format the result for display
+      // Format the result from Gemini analysis
       const analysis = data.analysis;
       setAnalysisResult({
         species: analysis.species,
