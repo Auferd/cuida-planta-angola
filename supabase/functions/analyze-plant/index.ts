@@ -27,8 +27,9 @@ serve(async (req) => {
     console.log('Analyzing plant for user:', userId);
     console.log('Image URL:', imageUrl);
 
-    // Initialize Gemini AI with the provided API key
-    const genAI = new GoogleGenerativeAI('AIzaSyAlBA4BGzUpc_mHmLDxXc04UqPc1fSL3Lc');
+    // Initialize Gemini AI with the API key from environment variables
+    const geminiApiKey = Deno.env.get('GEMINI_API_KEY') || 'AIzaSyAlBA4BGzUpc_mHmLDxXc04UqPc1fSL3Lc';
+    const genAI = new GoogleGenerativeAI(geminiApiKey);
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
 
     // Fetch the image and convert to base64
@@ -74,8 +75,8 @@ serve(async (req) => {
     }
 
     // Initialize Supabase client
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') || 'https://tithbqxdoaegpnwnqtej.supabase.co';
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || Deno.env.get('SUPABASE_ANON_KEY') || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRpdGhicXhkb2FlZ3Bud25xdGVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQwNjk2MzgsImV4cCI6MjA2OTY0NTYzOH0.OrHqr21go-z4Yk2j9RKs3BfGA3Mw2gQezrge4XZnmIY';
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Save the analysis to database
