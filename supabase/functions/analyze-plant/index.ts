@@ -45,36 +45,44 @@ serve(async (req) => {
       throw new Error('Invalid base64 conversion');
     }
 
-    // Send image to String.com webhook for analysis
-    console.log('Sending image to String.com for analysis...');
-    const stringResponse = await fetch('https://eocxll8fjxb5rny.m.pipedream.net', {
+    // Send image to Kindwise Plant.ID API for analysis
+    console.log('Sending image to Kindwise Plant.ID API for analysis...');
+    const plantIdResponse = await fetch('https://api.plant.id/v3/identification', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Api-Key': 'bpIryF4JEEt81xEJNl94gJhyzaiIv8ADpyCga8XbFWZeoO7vg4',
       },
       body: JSON.stringify({
-        image: imageBase64
+        images: [`data:image/jpeg;base64,${imageBase64}`],
+        similar_images: true,
+        plant_details: ['common_names', 'url']
       })
     });
 
-    if (!stringResponse.ok) {
-      throw new Error(`String.com API error: ${stringResponse.status}`);
+    if (!plantIdResponse.ok) {
+      throw new Error(`Plant.ID API error: ${plantIdResponse.status}`);
     }
 
-    const stringResult = await stringResponse.json();
-    console.log('String.com response:', stringResult);
+    const plantIdResult = await plantIdResponse.json();
+    console.log('Plant.ID response:', plantIdResult);
 
-    // Map String.com response to our format
+    // Extract plant name from Plant.ID response
+    const plantName = plantIdResult.suggestions?.[0]?.plant_name || 'Planta não identificada';
+    const commonNames = plantIdResult.suggestions?.[0]?.plant_details?.common_names || [];
+    const displayName = commonNames.length > 0 ? commonNames[0] : plantName;
+
+    // Map Plant.ID response to our format
     const analysis = {
-      species: stringResult.plant_identification?.primary_match?.plant_name || 'Planta não identificada',
-      type: stringResult.plant_identification?.primary_match?.scientific_name || 'Tipo desconhecido',
-      health_score: 85, // Default value since String.com doesn't provide health score
+      species: displayName,
+      type: plantName,
+      health_score: 85, // Default value
       hydration_status: 'Estado normal', // Default value
-      problems: stringResult.plant_identification?.diseases_detected > 0 ? ['Possíveis problemas detectados'] : [],
+      problems: [],
       recommendations: ['Mantenha em local bem iluminado', 'Regue moderadamente'],
       climate_tips: ['Adequada para clima tropical de Angola', 'Proteja do vento forte'],
       uses: ['Decorativa'],
-      confidence_score: (stringResult.plant_identification?.primary_match?.confidence || 50) / 100,
+      confidence_score: plantIdResult.suggestions?.[0]?.probability || 0.5,
     };
 
     // Initialize Supabase client
