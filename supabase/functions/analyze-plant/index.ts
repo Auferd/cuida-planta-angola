@@ -28,8 +28,22 @@ serve(async (req) => {
 
     // Fetch the image and convert to base64
     const imageResponse = await fetch(imageUrl);
+    if (!imageResponse.ok) {
+      throw new Error(`Failed to fetch image: ${imageResponse.status}`);
+    }
+    
     const imageBlob = await imageResponse.blob();
+    console.log('Image blob size:', imageBlob.size, 'bytes');
+    console.log('Image blob type:', imageBlob.type);
+    
     const imageBase64 = await blobToBase64(imageBlob);
+    console.log('Base64 length:', imageBase64.length);
+    console.log('Base64 start:', imageBase64.substring(0, 50));
+    
+    // Validate base64
+    if (!imageBase64 || imageBase64.length < 100) {
+      throw new Error('Invalid base64 conversion');
+    }
 
     // Send image to String.com webhook for analysis
     console.log('Sending image to String.com for analysis...');
@@ -117,13 +131,28 @@ serve(async (req) => {
   }
 });
 
-// Helper function to convert Blob to base64
+// Helper function to convert Blob to base64 (more reliable method)
 async function blobToBase64(blob: Blob): Promise<string> {
-  const buffer = await blob.arrayBuffer();
-  const bytes = new Uint8Array(buffer);
-  let binary = '';
-  for (let i = 0; i < bytes.byteLength; i++) {
-    binary += String.fromCharCode(bytes[i]);
+  try {
+    // Method 1: Using arrayBuffer and btoa (more reliable for Deno)
+    const buffer = await blob.arrayBuffer();
+    const bytes = new Uint8Array(buffer);
+    
+    // Convert to base64 in chunks to avoid call stack issues with large images
+    const chunkSize = 8192;
+    let binary = '';
+    
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      const chunk = bytes.slice(i, i + chunkSize);
+      binary += String.fromCharCode.apply(null, Array.from(chunk));
+    }
+    
+    const base64 = btoa(binary);
+    console.log('Base64 conversion successful, length:', base64.length);
+    
+    return base64;
+  } catch (error) {
+    console.error('Error in blobToBase64:', error);
+    throw new Error('Failed to convert image to base64');
   }
-  return btoa(binary);
 }
