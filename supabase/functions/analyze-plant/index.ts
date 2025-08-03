@@ -1,7 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
-import { GoogleGenerativeAI } from "npm:@google/generative-ai";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -27,52 +26,42 @@ serve(async (req) => {
     console.log('Analyzing plant for user:', userId);
     console.log('Image URL:', imageUrl);
 
-    // Initialize Gemini AI with the API key from environment variables
-    const geminiApiKey = Deno.env.get('GEMINI_API_KEY') || 'AIzaSyAlBA4BGzUpc_mHmLDxXc04UqPc1fSL3Lc';
-    const genAI = new GoogleGenerativeAI(geminiApiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
-
     // Fetch the image and convert to base64
     const imageResponse = await fetch(imageUrl);
     const imageBlob = await imageResponse.blob();
     const imageBase64 = await blobToBase64(imageBlob);
 
-    // Prepare the prompt
-    const prompt = `Você é um especialista em botânica que analisa plantas. Analise a imagem da planta e forneça as informações em formato JSON estruturado com os seguintes campos:
-    - species: nome científico e comum da planta
-    - type: categoria da planta (ex: "Planta Medicinal e Culinária")
-    - health_score: pontuação de saúde de 0-100
-    - hydration_status: status da hidratação (ex: "Bem hidratada", "Precisa água")
-    - problems: array de problemas detectados
-    - recommendations: array de recomendações de cuidado
-    - climate_tips: array de dicas específicas para o clima tropical de Angola
-    - uses: array de usos da planta (medicinais, culinários, etc.)
-    - confidence_score: sua confiança na identificação (0-1)
+    // Send image to String.com webhook for analysis
+    console.log('Sending image to String.com for analysis...');
+    const stringResponse = await fetch('https://eocxll8fjxb5rny.m.pipedream.net', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        image: imageBase64
+      })
+    });
 
-    Responda APENAS com o JSON válido, sem formatação markdown.`;
-
-    // Analyze image with Gemini
-    const result = await model.generateContent([
-      prompt,
-      {
-        inlineData: {
-          mimeType: "image/jpeg",
-          data: imageBase64
-        }
-      }
-    ]);
-
-    const response = await result.response;
-    const analysisText = response.text();
-
-    let analysis;
-    try {
-      analysis = JSON.parse(analysisText);
-    } catch (parseError) {
-      console.error('Error parsing analysis JSON:', parseError);
-      console.error('Raw text:', analysisText);
-      throw new Error('Failed to parse analysis result');
+    if (!stringResponse.ok) {
+      throw new Error(`String.com API error: ${stringResponse.status}`);
     }
+
+    const stringResult = await stringResponse.json();
+    console.log('String.com response:', stringResult);
+
+    // Map String.com response to our format
+    const analysis = {
+      species: stringResult.plant_identification?.primary_match?.plant_name || 'Planta não identificada',
+      type: stringResult.plant_identification?.primary_match?.scientific_name || 'Tipo desconhecido',
+      health_score: 85, // Default value since String.com doesn't provide health score
+      hydration_status: 'Estado normal', // Default value
+      problems: stringResult.plant_identification?.diseases_detected > 0 ? ['Possíveis problemas detectados'] : [],
+      recommendations: ['Mantenha em local bem iluminado', 'Regue moderadamente'],
+      climate_tips: ['Adequada para clima tropical de Angola', 'Proteja do vento forte'],
+      uses: ['Decorativa'],
+      confidence_score: (stringResult.plant_identification?.primary_match?.confidence || 50) / 100,
+    };
 
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || 'https://tithbqxdoaegpnwnqtej.supabase.co';
